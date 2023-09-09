@@ -7,16 +7,15 @@ author 'jhag01'
 version '0.3.1-beta'
 
 shared_scripts {
-    'shared/strings.lua',
     'shared/settings.lua'
 }
 
 client_scripts {
-    'client/functions.lua',
+    'client/notify.lua',
     'client/main.lua'
 }
 
 server_scripts {
-    'server/functions.lua',
-    'server/logger.lua'
+    'server/logger.lua',
+    'server/main.lua'
 }

@@ -1,7 +1,7 @@
 Settings = {
 
     Command = 'txLogin',
-    AcePerms = true,
+    AcePerms = false,
 
     Notify = 'none',
 

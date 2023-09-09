@@ -5,8 +5,6 @@ Settings = {
 
     Notify = 'none',
 
-    Debug = false,
-
     EnableLogs = false,
     Logger = 'none',
 

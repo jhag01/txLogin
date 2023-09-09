@@ -4,7 +4,7 @@ lua54 'yes'
 
 description 'txLogin'
 author 'jhag01'
-version '0.3.1-beta'
+version '0.4.2-beta'
 
 shared_scripts {
     'shared/settings.lua'

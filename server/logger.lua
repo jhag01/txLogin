@@ -1,5 +1,5 @@
 function oxLog(source, txuser, txActive)
-    lib.logger(source, Settings.oxLogs.Event, txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs '' .. txActive)
+    lib.logger(source, Settings.oxLogs.Event, txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs '' .. tostring(txActive))
 end
 
 function discordLog(source, txuser, txActive)
@@ -10,13 +10,13 @@ function discordLog(source, txuser, txActive)
         ["color"] = dcLog.Color,
         ["type"] = "rich",
         ["title"] = dcLog.title,
-        ["description"] = txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs .. txActive,
+        ["description"] = txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs .. tostring(txActive),
         ["footer"] = {
         ["text"] = dcLog.Footer .. ' | ' .. os.date('%c')
         }
     }
 
-    PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', json.encode({ username = log.Username, embeds = { Embed } }), { ['Content-Type'] = 'application/json' })
+    PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', json.encode({ username = dcLog.Username, embeds = { Embed } }), { ['Content-Type'] = 'application/json' })
 
 end
 

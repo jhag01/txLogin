@@ -1,8 +1,8 @@
-function oxLog(source, txuser, txActive)
-    lib.logger(source, Settings.oxLogs.Event, txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs '' .. tostring(txActive))
+function oxLog(source, txActive, txUser)
+    lib.logger(source, Settings.oxLogs.Event, txUser .. ' | ID: ' .. source .. ' | Admin changed their menu access to: ' .. tostring(txActive))
 end
 
-function discordLog(source, txuser, txActive)
+function discordLog(source, txActive, txUser)
 
     local dcLog = Settings.DiscordLogs
 
@@ -10,7 +10,7 @@ function discordLog(source, txuser, txActive)
         ["color"] = dcLog.Color,
         ["type"] = "rich",
         ["title"] = dcLog.title,
-        ["description"] = txUser .. ' | ID: ' .. source .. ' | ' .. Strings.Logs .. tostring(txActive),
+        ["description"] = txUser .. ' | ID: ' .. source .. ' | Admin changed their menu access to: ' .. tostring(txActive),
         ["footer"] = {
         ["text"] = dcLog.Footer .. ' | ' .. os.date('%c')
         }
@@ -34,7 +34,6 @@ AddEventHandler('txLogin:Logger', function(txActive, txUser)
     elseif Settings.Logger == 'custom' then
         customLog(source, txActive, txUser)
     else
-        debug(Strings.debugNoLog)
         return
     end
 

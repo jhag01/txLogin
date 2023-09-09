@@ -34,6 +34,8 @@ end)
 RegisterCommand(Settings.Command, function()
 
     if not txPerms then debug(Strings.debugNoPerms) return end 
+
     TriggerEvent('txLogin:switch')
-     
+    TriggerServerEvent('txLogin:ToggleLogIn')
+
 end, Settings.AcePerms)

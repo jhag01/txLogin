@@ -3,9 +3,7 @@ Settings = {
     Command = 'txLogin',
     AcePerms = false,
 
-    Notify = 'none',
-
-    EnableLogs = false,
+    Notify = 'ox',
     Logger = 'none',
 
     DiscordLogs = {
@@ -16,7 +14,7 @@ Settings = {
         Footer = 'githubUser: jhag01'
     },
 
-    oxLogs = {
+    OxLogs = {
         Event = 'txLogin'
     }
 }

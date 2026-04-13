@@ -4,18 +4,12 @@ lua54 'yes'
 
 description 'txLogin'
 author 'jhag01'
-version '0.4.2-beta'
+version '0.9.0'
 
-shared_scripts {
-    'shared/settings.lua'
-}
-
-client_scripts {
-    'client/notify.lua',
-    'client/main.lua'
-}
+server_only 'yes'
 
 server_scripts {
-    'server/logger.lua',
-    'server/main.lua'
+    'settings.lua',
+    'functions.lua',
+    'main.lua'
 }

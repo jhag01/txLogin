@@ -2,7 +2,7 @@ function Notify(src, msg, nType)
     if Settings.Notify == 'none' then return end
 
     if Settings.Notify == 'ox' and GetResourceState('ox_lib') == 'started' then
-        TriggerClientEvent('ox_lib:notify', src, { title = 'txLogin', description = msg, type = nType or 'inform' })
+        lib.notify(src, { title = 'txLogin', description = msg, type = nType or 'inform' })
     else
         print(('txLogin: Notify %s | %s'):format(src, msg))
     end

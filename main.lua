@@ -48,13 +48,14 @@ AddEventHandler('playerDropped', function()
 end)
 
 RegisterCommand(Settings.Command, function(source, args, rawCommand)
-    if not source or not admins[source] or not admins[source].isAdmin then return end
-    local status = admins[source].onDuty
+    local admin = admins[source]
+    if not source or not admin or not admin.isAdmin then return end
+    local status = not admin.onDuty
 
-    Player(source).state.txLogin = not status
-    admins[source].onDuty = not status
+    Player(source).state.txLogin = status
+    admin.onDuty = status
 
     TriggerClientEvent('txcl:reAuth', source)
-    Notify(source, ('Duty status toggled to %s'):format(not status and 'ON' or 'OFF'), 'inform')
-    Log(source, not status, admins[source].username)
+    Notify(source, ('Duty status toggled to %s'):format(status and 'ON' or 'OFF'), 'inform')
+    Log(source, status, admin.username)
 end, Settings.AcePerms)

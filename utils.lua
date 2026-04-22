@@ -23,16 +23,17 @@ local Logs = {
         local dcLog = Settings.DiscordLogs
         if not dcLog.Webhook or dcLog.Webhook == 'WEBHOOK' then return end
 
-        local embed = {{
-            ['color'] = tonumber(dcLog.Color) or 15548997,
-            ['title'] = dcLog.Title,
-            ['description'] = string.format('**Admin:** %s\n**ID:** %s\n**Duty:** %s', user, source, tostring(status)),
-            ['footer'] = { ['text'] = string.format('%s | %s', dcLog.Footer, os.date('%c')) }
-        }}
+        local data = {
+            username = dcLog.Username,
+            embeds = {{
+                ['color'] = tonumber(dcLog.Color) or 15548997,
+                ['title'] = dcLog.Title,
+                ['description'] = string.format('**Admin:** %s\n**ID:** %s\n**Duty:** %s', user, source, tostring(status)),
+                ['footer'] = { ['text'] = string.format('%s | %s', dcLog.Footer, os.date('%c')) }
+            }}
+        }
 
-        PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST',
-            json.encode({ username = dcLog.Username, embeds = embed }),
-            { ['Content-Type'] = 'application/json' })
+        PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', json.encode(data), { ['Content-Type'] = 'application/json' })
     end,
     ['custom'] = function(source, status, user)
         -- Add custom logic here

@@ -34,6 +34,7 @@ Utils.Log = function(source, status, user)
         end,
         ['discord'] = function()
             local dcLog = Settings.DiscordLogs
+            if not dcLog.Webhook or dcLog.Webhook == 'WEBHOOK' then return end
             local embed = {
                 {
                     ['color'] = tonumber(dcLog.Color),
@@ -42,8 +43,8 @@ Utils.Log = function(source, status, user)
                     ['footer'] = { ['text'] = dcLog.Footer .. ' | ' .. os.date('%c') }
                 }
             }
-            PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', 
-                json.encode({ username = dcLog.Username, embeds = embed }), 
+            PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST',
+                json.encode({ username = dcLog.Username, embeds = embed }),
                 { ['Content-Type'] = 'application/json' })
         end,
         ['custom'] = function()

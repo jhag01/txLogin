@@ -1,5 +1,25 @@
 local admins = {}
 
+local function toggleDuty(source, status)
+    if not source or source == 0 then return end
+
+    local admin = admins[source]
+    if not admin or not admin.isAdmin then return nil end
+
+    local newStatus = (status ~= nil) and status or not admin.onDuty
+
+    admin.onDuty = newStatus
+    Player(source).state.txLogin = newStatus
+
+    TriggerClientEvent('txcl:reAuth', source)
+
+    Utils.Notify(source, string.format('Duty status toggled to %s', newStatus and 'ON' or 'OFF'), 'inform')
+    Utils.Log(source, newStatus, admin.username)
+
+    return newStatus
+end
+exports('toggleDuty', toggleDuty)
+
 AddEventHandler('txAdmin:events:adminsUpdated', function(data)
     if type(data) ~= 'table' then return end
     local lookup = {}
@@ -48,17 +68,5 @@ AddEventHandler('playerDropped', function()
 end)
 
 RegisterCommand(Settings.Command, function(source, args, rawCommand)
-    local admin = admins[source]
-
-    if not source or source == 0 then return end
-    if not admin or not admin.isAdmin then return end
-
-    local newStatus = not admin.onDuty
-    admin.onDuty = newStatus
-    Player(source).state.txLogin = newStatus
-
-    TriggerClientEvent('txcl:reAuth', source)
-
-    Utils.Notify(source, string.format('Duty status toggled to %s', newStatus and 'ON' or 'OFF'), 'inform')
-    Utils.Log(source, newStatus, admin.username)
+    toggleDuty(source)
 end, Settings.AcePerms)

@@ -49,13 +49,16 @@ end)
 
 RegisterCommand(Settings.Command, function(source, args, rawCommand)
     local admin = admins[source]
-    if not source or not admin or not admin.isAdmin then return end
-    local status = not admin.onDuty
 
-    Player(source).state.txLogin = status
-    admin.onDuty = status
+    if not source or source == 0 then return end
+    if not admin or not admin.isAdmin then return end
+
+    local newStatus = not admin.onDuty
+    admin.onDuty = newStatus
+    Player(source).state.txLogin = newStatus
 
     TriggerClientEvent('txcl:reAuth', source)
-    Notify(source, ('Duty status toggled to %s'):format(status and 'ON' or 'OFF'), 'inform')
-    Log(source, status, admin.username)
+
+    Utils.Notify(source, string.format('Duty status toggled to %s', newStatus and 'ON' or 'OFF'), 'inform')
+    Utils.Log(source, newStatus, admin.username)
 end, Settings.AcePerms)

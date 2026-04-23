@@ -20,6 +20,19 @@ local function toggleDuty(source, status)
 end
 exports('toggleDuty', toggleDuty)
 
+local function fetchAdmins(onlyOnDuty)
+    if not onlyOnDuty then return admins end
+
+    local onDutyAdmins = {}
+    for netId, info in pairs(admins) do
+        if info.onDuty then
+            onDutyAdmins[netId] = info
+        end
+    end
+    return onDutyAdmins
+end
+exports('fetchAdmins', fetchAdmins)
+
 AddEventHandler('txAdmin:events:adminsUpdated', function(data)
     if type(data) ~= 'table' then return end
     local lookup = {}

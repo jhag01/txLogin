@@ -4,7 +4,7 @@ lua54 'yes'
 
 description 'txLogin'
 author 'jhag01'
-version '1.0.0'
+version '1.0.1'
 
 server_only 'yes'
 

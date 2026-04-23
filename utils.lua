@@ -9,9 +9,12 @@ local Notifies = {
             type = nType or 'inform'
         })
     end,
+
     ['custom'] = function(source, msg, nType)
         -- Add custom logic here
-    end
+    end,
+
+    ['none'] = function() end
 }
 
 local Logs = {
@@ -19,6 +22,7 @@ local Logs = {
         if GetResourceState('ox_lib') ~= 'started' then return end
         lib.logger(source, Settings.OxLogs.Event, string.format('%s | ID: %s | Duty: %s', user, source, status))
     end,
+
     ['discord'] = function(source, status, user)
         local dcLog = Settings.DiscordLogs
         if not dcLog.Webhook or dcLog.Webhook == 'WEBHOOK' then return end
@@ -35,29 +39,25 @@ local Logs = {
 
         PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', json.encode(data), { ['Content-Type'] = 'application/json' })
     end,
+
     ['custom'] = function(source, status, user)
         -- Add custom logic here
-    end
+    end,
+
+    ['none'] = function() end
 }
 
-Utils.Notify = function(source, msg, nType)
+local function InitializeUtils()
     local notifyType = (Settings.Notify or 'none'):lower()
-    if notifyType == 'none' then return end
-
-    local notify = Notifies[notifyType]
-    if not notify then 
-        return print(string.format('^1[Error]^7 Notification type \'%s\' not supported.', notifyType))
-    end
-
-    notify(source, msg, nType)
-end
-
-Utils.Log = function(source, status, user)
     local logType = (Settings.Logger or 'none'):lower()
-    if logType == 'none' then return end
 
-    local logger = Logs[logType]
-    if logger then
-        logger(source, status, user)
+    Utils.Notify = Notifies[notifyType] or function()
+        print(string.format('^1[Error]^7 Notification type "%s" is invalid.', notifyType))
+    end
+
+    Utils.Log = Logs[logType] or function()
+        print(string.format('^1[Error]^7 Logger type "%s" is invalid.', logType))
     end
 end
+
+InitializeUtils()

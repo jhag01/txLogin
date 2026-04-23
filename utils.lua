@@ -1,15 +1,15 @@
 Utils = {}
 
 local Notifies = {
-    ['ox'] = function(src, msg, nType)
+    ['ox'] = function(source, msg, nType)
         if GetResourceState('ox_lib') ~= 'started' then return end
-        lib.notify(src, {
+        lib.notify(source, {
             title = 'txLogin',
             description = msg,
             type = nType or 'inform'
         })
     end,
-    ['custom'] = function(src, msg, nType)
+    ['custom'] = function(source, msg, nType)
         -- Add custom logic here
     end
 }
@@ -40,7 +40,7 @@ local Logs = {
     end
 }
 
-Utils.Notify = function(src, msg, nType)
+Utils.Notify = function(source, msg, nType)
     local notifyType = (Settings.Notify or 'none'):lower()
     if notifyType == 'none' then return end
 
@@ -49,7 +49,7 @@ Utils.Notify = function(src, msg, nType)
         return print(string.format('^1[Error]^7 Notification type \'%s\' not supported.', notifyType))
     end
 
-    notify(src, msg, nType)
+    notify(source, msg, nType)
 end
 
 Utils.Log = function(source, status, user)

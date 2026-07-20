@@ -3,6 +3,8 @@ Settings = {
     Command = 'txLogin', -- Command to toggle duty status
     AcePerms = false, -- Use ace permissions: command.txLogin
 
+    Locale = 'en', -- Language for player-facing messages: 'en', 'nl', 'fr', 'es', 'de'
+
     Notify = 'none', -- Notification type: 'none', 'ox' (ox_lib required), 'custom' (Insert own notification system in utils.Notify function)
     Logger = 'none', -- Logger type: 'none', 'ox' (ox_lib required), 'discord', 'custom' (Insert own logging system in utils.Log function)
 

@@ -7,7 +7,10 @@ Standalone FiveM resource that bridges txAdmin authentication with a togglable "
 * Syncs `txAdmin` and `txLogin` state bags on every player, readable from any other resource (scoreboards, HUDs, nametags, etc).
 * Triggers a client-side re-auth (`txcl:reAuth`) on toggle so the txAdmin menu picks up the change immediately.
 * Optional ACE permission support for the toggle command.
+* Tracks time spent on duty per admin, per connection.
 * Cleans up state on disconnect and on permission changes pushed from the txAdmin web panel.
+* Survives a `restart txLogin` without losing admin/duty state for players who stayed connected.
+* Player-facing messages available in English, Dutch, French, Spanish, and German.
 
 ## Documentation
 Full config and API reference: https://dots-development.gitbook.io/docs/free-scripts/dots-txlogin
@@ -32,7 +35,7 @@ exports['txLogin']:toggleDuty(source)
 ```
 
 ### `fetchAdmins(onlyOnDuty)`
-Returns a table of authenticated admins currently on the server, keyed by server ID, with `username`, `isAdmin`, and `onDuty` fields.
+Returns a table of authenticated admins currently on the server, keyed by server ID, with `username`, `isAdmin`, `onDuty`, `dutySince`, and `totalDuty` fields.
 
 | Parameter | Type | Required | Description |
 | --------- | ---- | -------- | ----------- |
@@ -45,6 +48,30 @@ for src, info in pairs(activeStaff) do
     print(info.username .. ' (ID: ' .. src .. ') is active!')
 end
 ```
+
+### `getDutyTime(source)`
+Returns the total number of seconds an admin has spent on duty since they connected, including the current session if they're on duty right now.
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| source | number | Yes | Server ID (netid) of the player. |
+
+```lua
+local seconds = exports['txLogin']:getDutyTime(source)
+```
+
+## Duty tracking
+Every admin record carries `dutySince` (timestamp of when their current duty session started, or `nil` if off duty) and `totalDuty` (accumulated seconds on duty since they connected). Session length is included in Discord/ox logs when going off duty.
+
+This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects, not on a `restart txLogin` (see below).
+
+## Locales
+Player-facing notifications (currently just the duty on/off message) are pulled from `locales/<code>.lua`. Set `Settings.Locale` to `'en'`, `'nl'`, `'fr'`, `'es'`, or `'de'`. Adding a language is just a new `locales/xx.lua` file following the same shape as the existing ones — no manifest changes needed since `locales/*.lua` is already globbed in.
+
+## Surviving a resource restart
+`admins` (and duty state) live in memory, so a plain `restart txLogin` used to reset everyone's duty status even if they never disconnected. Now, on start, txLogin re-triggers `txcl:reAuth` for every currently connected player, which re-runs the client's admin auth flow and re-fires `txAdmin:events:adminAuth` server-side — the same event this resource already listens to. Duty status and accumulated time for those players are restored from `duty_state.json` (written next to the resource's Lua files, gitignored) at that point.
+
+This only restores state for players who were connected at the moment of restart — a real disconnect always clears their saved state, so nobody comes back on-duty from a stale file after actually leaving.
 
 ## Gating the txAdmin menu behind duty status
 This is the main use case for `txcl:reAuth`: keep the txAdmin menu unusable while an admin is off duty.

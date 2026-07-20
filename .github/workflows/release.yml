@@ -28,6 +28,7 @@ jobs:
           cp utils.lua release_build/${{ github.event.repository.name }}/
           cp LICENSE release_build/${{ github.event.repository.name }}/
           cp README.md release_build/${{ github.event.repository.name }}/
+          cp -r locales release_build/${{ github.event.repository.name }}/
 
           sed -i -E "s/^version .*/version '${{ github.ref_name }}'/" release_build/${{ github.event.repository.name }}/fxmanifest.lua
 

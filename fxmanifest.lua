@@ -14,5 +14,6 @@ server_scripts {
     'settings.lua',
     'server/utils.lua',
     'server/duty_tracking.lua',
+    'server/cooldown.lua',
     'server/main.lua'
 }

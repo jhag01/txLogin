@@ -16,6 +16,12 @@ local function toggleDuty(source, status)
 
     if newStatus == admin.onDuty then return newStatus end
 
+    local remaining = Cooldown.remaining(source)
+    if remaining > 0 then
+        Utils.Notify(source, Utils.Locale('duty_cooldown', remaining), 'error')
+        return admin.onDuty
+    end
+
     admin.onDuty = newStatus
 
     local sessionDuration
@@ -33,6 +39,7 @@ local function toggleDuty(source, status)
     Utils.Log(source, newStatus, admin.username, Utils.FormatDuration(sessionDuration))
 
     DutyTracking.persist(source, admin)
+    Cooldown.record(source)
 
     return newStatus
 end
@@ -123,6 +130,7 @@ end)
 AddEventHandler('playerDropped', function()
     admins[source] = nil
     DutyTracking.clear(source)
+    Cooldown.clear(source)
 end)
 
 AddEventHandler('onResourceStart', function(startedResource)

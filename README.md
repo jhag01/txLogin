@@ -8,6 +8,7 @@ Standalone FiveM resource that bridges txAdmin authentication with a togglable "
 * Triggers a client-side re-auth (`txcl:reAuth`) on toggle so the txAdmin menu picks up the change immediately.
 * Optional ACE permission support for the toggle command.
 * Tracks time spent on duty per admin, per connection.
+* Optional per-admin cooldown between duty toggles.
 * Cleans up state on disconnect and on permission changes pushed from the txAdmin web panel.
 * Survives a `restart txLogin` without losing admin/duty state for players who stayed connected.
 * Player-facing messages available in English, Dutch, French, Spanish, and German.
@@ -29,6 +30,7 @@ txLogin/
 └── server/
     ├── utils.lua        -- Notify/Log providers, Locale/FormatDuration helpers
     ├── duty_tracking.lua -- optional, see Modules below
+    ├── cooldown.lua      -- optional, see Modules below
     └── main.lua          -- core: admin tracking, toggleDuty, exports, event handlers
 ```
 Everything is server-only for now (`server_only 'yes'`); a `client/` folder gets added if/when a feature (e.g. clothing) needs one. This mirrors how other jhag01 resources like skillSystem are laid out — `server/`/`client/` split, config and locales shared at root.
@@ -51,6 +53,8 @@ Toggles duty status, or forces a specific state. Returns the new state (`boolean
 ```lua
 exports['txLogin']:toggleDuty(source)
 ```
+
+If a cooldown is configured (see below), it applies to every call to this function, including calls made through this export — there's no separate "forced" bypass path.
 
 ### `fetchAdmins(onlyOnDuty)`
 Returns a table of authenticated admins currently on the server, keyed by server ID, with `username`, `isAdmin`, `onDuty`, `dutySince`, and `totalDuty` fields.
@@ -79,12 +83,17 @@ local seconds = exports['txLogin']:getDutyTime(source)
 ```
 
 ## Modules
-Optional features are just files in `server/` that check their own `Settings` flag and no-op when it's off — no separate `modules/` folder, matching how other jhag01 resources (e.g. skillSystem's `server/admin.lua`) do it. `duty_tracking.lua` is the only one so far, and it exposes a `DutyTracking` global that `main.lua` calls into directly (it can't use a plain top-of-file `if not Settings.X then return end` bailout like a self-contained file could, since `main.lua` calls its functions inline and expects them to exist either way — so the check happens inside each function instead).
+Optional features are just files in `server/` that check their own `Settings` flag and no-op when it's off — no separate `modules/` folder, matching how other jhag01 resources (e.g. skillSystem's `server/admin.lua`) do it. Neither module here can use a plain top-of-file `if not Settings.X then return end` bailout like a fully self-contained file could, since `main.lua` calls their functions inline and expects them to exist either way — so the check happens inside each function instead.
 
 ### Duty tracking (`server/duty_tracking.lua`)
 Enabled via `Settings.DutyTracking` (default `true`). Every admin record carries `dutySince` (timestamp of when their current duty session started, or `nil` if off duty) and `totalDuty` (accumulated seconds on duty since they connected). Session length is included in Discord/ox logs when going off duty.
 
 This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects. It's also the only thing that needs `duty_state.json` (written at the resource root, gitignored): that file exists purely to carry `dutySince`/`totalDuty` across a script restart. When `DutyTracking` is disabled, no file is ever created.
+
+### Cooldown (`server/cooldown.lua`)
+Enabled via `Settings.Cooldown` (default `0`, disabled), set to the number of seconds an admin must wait between duty toggles. When a toggle is blocked, the admin gets the `duty_cooldown` locale message (with the remaining seconds) instead of the duty being changed — `toggleDuty` returns their current, unchanged status in that case.
+
+Purely in-memory, per-connection — no file, no persistence, resets on disconnect. There's nothing here for a script restart to lose.
 
 ## Locales
 Player-facing notifications (currently just the duty on/off message) are pulled from `locales/<code>.lua`. Set `Settings.Locale` to `'en'`, `'nl'`, `'fr'`, `'es'`, or `'de'`. Adding a language is just a new `locales/xx.lua` file following the same shape as the existing ones — no manifest changes needed since `locales/*.lua` is already globbed in.

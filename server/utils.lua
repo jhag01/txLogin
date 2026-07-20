@@ -17,10 +17,16 @@ local function formatDuration(seconds)
 end
 Utils.FormatDuration = formatDuration
 
-function Utils.Locale(key)
+function Utils.Locale(key, ...)
     local localeType = (Settings.Locale or 'en'):lower()
     local locale = Locales[localeType] or Locales['en']
-    return locale[key] or key
+    local str = locale[key] or key
+
+    if select('#', ...) > 0 then
+        return string.format(str, ...)
+    end
+
+    return str
 end
 
 local Notifies = {

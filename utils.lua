@@ -37,7 +37,7 @@ local Logs = {
             }}
         }
 
-        PerformHttpRequest(dcLog.Webhook, function(err, text, headers) end, 'POST', json.encode(data), { ['Content-Type'] = 'application/json' })
+        PerformHttpRequest(dcLog.Webhook, function() end, 'POST', json.encode(data), { ['Content-Type'] = 'application/json' })
     end,
 
     ['custom'] = function(source, status, user)

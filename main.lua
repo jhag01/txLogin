@@ -6,7 +6,10 @@ local function toggleDuty(source, status)
     local admin = admins[source]
     if not admin or not admin.isAdmin then return nil end
 
-    local newStatus = (status ~= nil) and status or not admin.onDuty
+    local newStatus = not admin.onDuty
+    if status ~= nil then
+        newStatus = status
+    end
 
     admin.onDuty = newStatus
     Player(source).state.txLogin = newStatus
@@ -40,13 +43,11 @@ AddEventHandler('txAdmin:events:adminsUpdated', function(data)
         lookup[tonumber(id)] = true
     end
 
-    for netId, info in pairs(admins) do
+    for netId in pairs(admins) do
         if not lookup[netId] then
-            local player = Player(netId)
-            if player.state then
-                player.state.txAdmin = false
-                player.state.txLogin = false
-            end
+            local state = Player(netId).state
+            state.txAdmin = false
+            state.txLogin = false
 
             admins[netId] = nil
         end
@@ -58,16 +59,18 @@ AddEventHandler('txAdmin:events:adminAuth', function(data)
     if not netId or netId < 0 then return end
 
     if not data.isAdmin then
-        Player(netId).state.txAdmin = false
-        Player(netId).state.txLogin = false
+        local state = Player(netId).state
+        state.txAdmin = false
+        state.txLogin = false
         admins[netId] = nil
         return
     end
 
-    local status = (admins[netId] and admins[netId].onDuty) or false
+    local status = admins[netId] and admins[netId].onDuty or false
 
-    Player(netId).state.txAdmin = true
-    Player(netId).state.txLogin = status
+    local state = Player(netId).state
+    state.txAdmin = true
+    state.txLogin = status
 
     admins[netId] = {
         username = data.username,
@@ -80,6 +83,6 @@ AddEventHandler('playerDropped', function()
     admins[source] = nil
 end)
 
-RegisterCommand(Settings.Command, function(source, args, rawCommand)
+RegisterCommand(Settings.Command, function(source)
     toggleDuty(source)
 end, Settings.AcePerms)

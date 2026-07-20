@@ -5,6 +5,8 @@ Settings = {
 
     Locale = 'en', -- Language for player-facing messages: 'en', 'nl', 'fr', 'es', 'de'
 
+    DutyTracking = true, -- Track time on duty per admin (getDutyTime export, session length in logs, duty_state.json for surviving script restarts)
+
     Notify = 'none', -- Notification type: 'none', 'ox' (ox_lib required), 'custom' (Insert own notification system in utils.Notify function)
     Logger = 'none', -- Logger type: 'none', 'ox' (ox_lib required), 'discord', 'custom' (Insert own logging system in utils.Log function)
 

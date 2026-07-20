@@ -1,40 +1,7 @@
+local resourceName = GetCurrentResourceName()
+
 local admins = {}
 local pendingResync = {} -- netId -> true, only set for players connected at the moment this resource (re)started
-
-local resourceName = GetCurrentResourceName()
-local DUTY_STATE_FILE = 'duty_state.json'
-
-local function loadDutyStates()
-    local raw = LoadResourceFile(resourceName, DUTY_STATE_FILE)
-    if not raw then return {} end
-
-    local ok, data = pcall(json.decode, raw)
-    if not ok or type(data) ~= 'table' then return {} end
-
-    return data
-end
-
-local function saveDutyState(netId, admin)
-    local states = loadDutyStates()
-    states[tostring(netId)] = {
-        onDuty = admin.onDuty,
-        dutySince = admin.dutySince,
-        totalDuty = admin.totalDuty or 0
-    }
-    SaveResourceFile(resourceName, DUTY_STATE_FILE, json.encode(states), -1)
-end
-
-local function loadDutyState(netId)
-    return loadDutyStates()[tostring(netId)]
-end
-
-local function clearDutyState(netId)
-    local states = loadDutyStates()
-    if states[tostring(netId)] == nil then return end
-
-    states[tostring(netId)] = nil
-    SaveResourceFile(resourceName, DUTY_STATE_FILE, json.encode(states), -1)
-end
 
 local function toggleDuty(source, status)
     if not source or source == 0 then return end
@@ -53,11 +20,9 @@ local function toggleDuty(source, status)
 
     local sessionDuration
     if newStatus then
-        admin.dutySince = os.time()
+        Modules.DutyTracking.onDutyOn(admin)
     else
-        sessionDuration = os.time() - (admin.dutySince or os.time())
-        admin.totalDuty = (admin.totalDuty or 0) + sessionDuration
-        admin.dutySince = nil
+        sessionDuration = Modules.DutyTracking.onDutyOff(admin)
     end
 
     Player(source).state.txLogin = newStatus
@@ -67,7 +32,7 @@ local function toggleDuty(source, status)
     Utils.Notify(source, Utils.Locale(newStatus and 'duty_on' or 'duty_off'), 'inform')
     Utils.Log(source, newStatus, admin.username, Utils.FormatDuration(sessionDuration))
 
-    saveDutyState(source, admin)
+    Modules.DutyTracking.persist(source, admin)
 
     return newStatus
 end
@@ -113,7 +78,7 @@ AddEventHandler('txAdmin:events:adminsUpdated', function(data)
             state.txLogin = false
 
             admins[netId] = nil
-            clearDutyState(netId)
+            Modules.DutyTracking.clear(netId)
         end
     end
 end)
@@ -122,31 +87,41 @@ AddEventHandler('txAdmin:events:adminAuth', function(data)
     local netId = tonumber(data.netid)
     if not netId or netId < 0 then return end
 
+    local state = Player(netId).state
+
     if not data.isAdmin then
-        local state = Player(netId).state
         state.txAdmin = false
         state.txLogin = false
         admins[netId] = nil
-        clearDutyState(netId)
+        Modules.DutyTracking.clear(netId)
         return
     end
 
-    local status, dutySince, totalDuty = false, nil, 0
-
+    -- onDuty survives a script restart on its own: the state bag lives on the
+    -- player entity, not in this resource's memory, so it only resets when the
+    -- player actually disconnects. dutySince/totalDuty have no such home, so
+    -- they're only restored for players who were connected when we restarted.
+    local status
     if admins[netId] then
-        status, dutySince, totalDuty = admins[netId].onDuty, admins[netId].dutySince, admins[netId].totalDuty or 0
+        status = admins[netId].onDuty
+    else
+        status = state.txLogin == true
+    end
+
+    local dutySince, totalDuty
+    if admins[netId] then
+        dutySince, totalDuty = admins[netId].dutySince, admins[netId].totalDuty
     elseif pendingResync[netId] then
-        local saved = loadDutyState(netId)
+        local saved = Modules.DutyTracking.restore(netId)
         if saved then
-            status, dutySince, totalDuty = saved.onDuty, saved.dutySince, saved.totalDuty or 0
+            dutySince, totalDuty = saved.dutySince, saved.totalDuty
         end
     else
-        clearDutyState(netId) -- fresh connection, ignore any leftover state from a previous session
+        Modules.DutyTracking.clear(netId) -- fresh connection, ignore any leftover state from a previous session
     end
 
     pendingResync[netId] = nil
 
-    local state = Player(netId).state
     state.txAdmin = true
     state.txLogin = status
 
@@ -155,13 +130,13 @@ AddEventHandler('txAdmin:events:adminAuth', function(data)
         isAdmin = data.isAdmin,
         onDuty = status,
         dutySince = dutySince,
-        totalDuty = totalDuty
+        totalDuty = totalDuty or 0
     }
 end)
 
 AddEventHandler('playerDropped', function()
     admins[source] = nil
-    clearDutyState(source)
+    Modules.DutyTracking.clear(source)
 end)
 
 AddEventHandler('onResourceStart', function(startedResource)

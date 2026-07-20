@@ -60,18 +60,22 @@ Returns the total number of seconds an admin has spent on duty since they connec
 local seconds = exports['txLogin']:getDutyTime(source)
 ```
 
-## Duty tracking
-Every admin record carries `dutySince` (timestamp of when their current duty session started, or `nil` if off duty) and `totalDuty` (accumulated seconds on duty since they connected). Session length is included in Discord/ox logs when going off duty.
+## Modules
+Optional features live in `modules/` and are gated by their own `Settings` flag — disabled means the module does nothing, including not touching disk.
 
-This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects, not on a `restart txLogin` (see below).
+### Duty tracking (`modules/duty_tracking.lua`)
+Enabled via `Settings.DutyTracking` (default `true`). Every admin record carries `dutySince` (timestamp of when their current duty session started, or `nil` if off duty) and `totalDuty` (accumulated seconds on duty since they connected). Session length is included in Discord/ox logs when going off duty.
+
+This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects. It's also the only thing that needs `duty_state.json` (written next to the resource's Lua files, gitignored): that file exists purely to carry `dutySince`/`totalDuty` across a script restart. When `DutyTracking` is disabled, no file is ever created.
 
 ## Locales
 Player-facing notifications (currently just the duty on/off message) are pulled from `locales/<code>.lua`. Set `Settings.Locale` to `'en'`, `'nl'`, `'fr'`, `'es'`, or `'de'`. Adding a language is just a new `locales/xx.lua` file following the same shape as the existing ones — no manifest changes needed since `locales/*.lua` is already globbed in.
 
 ## Surviving a resource restart
-`admins` (and duty state) live in memory, so a plain `restart txLogin` used to reset everyone's duty status even if they never disconnected. Now, on start, txLogin re-triggers `txcl:reAuth` for every currently connected player, which re-runs the client's admin auth flow and re-fires `txAdmin:events:adminAuth` server-side — the same event this resource already listens to. Duty status and accumulated time for those players are restored from `duty_state.json` (written next to the resource's Lua files, gitignored) at that point.
+`admins` lives in memory, so a plain `restart txLogin` used to reset everyone's duty status even if they never disconnected. Two things fix that, at two different levels:
 
-This only restores state for players who were connected at the moment of restart — a real disconnect always clears their saved state, so nobody comes back on-duty from a stale file after actually leaving.
+* **On/off duty status** needs no extra work: `playerState.txLogin` is a state bag, which belongs to the player's connection, not to this resource's Lua state. It survives a script restart on its own and only clears when the player actually disconnects (or the whole server restarts). On start, txLogin re-triggers `txcl:reAuth` for every connected player, which re-runs the client auth flow and re-fires `txAdmin:events:adminAuth` server-side, letting txLogin rebuild its `admins` table and read the still-correct status straight off the state bag.
+* **Duty-time tracking** (`dutySince`/`totalDuty`) has no such home — it's plain bookkeeping in this resource's memory — so it's restored from `duty_state.json` via the duty tracking module above, and only for players who were connected at the moment of restart. A real disconnect always clears their saved entry first, so nobody comes back with stale tracked time after actually leaving.
 
 ## Gating the txAdmin menu behind duty status
 This is the main use case for `txcl:reAuth`: keep the txAdmin menu unusable while an admin is off duty.

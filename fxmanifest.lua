@@ -12,7 +12,7 @@ server_scripts {
     -- '@ox_lib/init.lua', -- Uncomment if using ox_lib notifications or logging
     'locales/*.lua',
     'settings.lua',
-    'utils.lua',
-    'modules/*.lua',
-    'main.lua'
+    'server/utils.lua',
+    'server/duty_tracking.lua',
+    'server/main.lua'
 }

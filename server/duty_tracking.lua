@@ -1,4 +1,4 @@
-Modules = Modules or {}
+DutyTracking = {}
 
 local enabled = Settings.DutyTracking == true
 local resourceName = GetCurrentResourceName()
@@ -18,16 +18,11 @@ local function saveStates(states)
     SaveResourceFile(resourceName, STATE_FILE, json.encode(states), -1)
 end
 
-local DutyTracking = {}
-
--- Called when an admin's duty status turns on: starts the session clock.
 function DutyTracking.onDutyOn(admin)
     if not enabled then return end
     admin.dutySince = os.time()
 end
 
--- Called when an admin's duty status turns off: rolls the session into the
--- running total and returns the session length in seconds.
 function DutyTracking.onDutyOff(admin)
     if not enabled then return nil end
 
@@ -38,8 +33,6 @@ function DutyTracking.onDutyOff(admin)
     return duration
 end
 
--- Persists dutySince/totalDuty for netId so they survive a script restart
--- while the player stays connected. No-op (and never touches disk) when disabled.
 function DutyTracking.persist(netId, admin)
     if not enabled then return end
 
@@ -49,12 +42,6 @@ function DutyTracking.persist(netId, admin)
         totalDuty = admin.totalDuty or 0
     }
     saveStates(states)
-end
-
--- Returns the saved { dutySince, totalDuty } for netId, or nil.
-function DutyTracking.restore(netId)
-    if not enabled then return nil end
-    return loadStates()[tostring(netId)]
 end
 
 function DutyTracking.clear(netId)
@@ -67,4 +54,25 @@ function DutyTracking.clear(netId)
     saveStates(states)
 end
 
-Modules.DutyTracking = DutyTracking
+function DutyTracking.resolve(netId, isPendingResync)
+    if not enabled then return nil, 0 end
+
+    if isPendingResync then
+        local saved = loadStates()[tostring(netId)]
+        if saved then
+            return saved.dutySince, saved.totalDuty or 0
+        end
+        return nil, 0
+    end
+
+    DutyTracking.clear(netId)
+    return nil, 0
+end
+
+function DutyTracking.getTime(admin)
+    local total = admin.totalDuty or 0
+    if admin.onDuty and admin.dutySince then
+        total = total + (os.time() - admin.dutySince)
+    end
+    return total
+end

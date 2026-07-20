@@ -1,7 +1,7 @@
 local resourceName = GetCurrentResourceName()
 
 local admins = {}
-local pendingResync = {} -- netId -> true, only set for players connected at the moment this resource (re)started
+local pendingResync = {}
 
 local function toggleDuty(source, status)
     if not source or source == 0 then return end
@@ -20,9 +20,9 @@ local function toggleDuty(source, status)
 
     local sessionDuration
     if newStatus then
-        Modules.DutyTracking.onDutyOn(admin)
+        DutyTracking.onDutyOn(admin)
     else
-        sessionDuration = Modules.DutyTracking.onDutyOff(admin)
+        sessionDuration = DutyTracking.onDutyOff(admin)
     end
 
     Player(source).state.txLogin = newStatus
@@ -32,7 +32,7 @@ local function toggleDuty(source, status)
     Utils.Notify(source, Utils.Locale(newStatus and 'duty_on' or 'duty_off'), 'inform')
     Utils.Log(source, newStatus, admin.username, Utils.FormatDuration(sessionDuration))
 
-    Modules.DutyTracking.persist(source, admin)
+    DutyTracking.persist(source, admin)
 
     return newStatus
 end
@@ -42,12 +42,7 @@ local function getDutyTime(source)
     local admin = admins[source]
     if not admin then return 0 end
 
-    local total = admin.totalDuty or 0
-    if admin.onDuty and admin.dutySince then
-        total = total + (os.time() - admin.dutySince)
-    end
-
-    return total
+    return DutyTracking.getTime(admin)
 end
 exports('getDutyTime', getDutyTime)
 
@@ -78,7 +73,7 @@ AddEventHandler('txAdmin:events:adminsUpdated', function(data)
             state.txLogin = false
 
             admins[netId] = nil
-            Modules.DutyTracking.clear(netId)
+            DutyTracking.clear(netId)
         end
     end
 end)
@@ -93,14 +88,10 @@ AddEventHandler('txAdmin:events:adminAuth', function(data)
         state.txAdmin = false
         state.txLogin = false
         admins[netId] = nil
-        Modules.DutyTracking.clear(netId)
+        DutyTracking.clear(netId)
         return
     end
 
-    -- onDuty survives a script restart on its own: the state bag lives on the
-    -- player entity, not in this resource's memory, so it only resets when the
-    -- player actually disconnects. dutySince/totalDuty have no such home, so
-    -- they're only restored for players who were connected when we restarted.
     local status
     if admins[netId] then
         status = admins[netId].onDuty
@@ -111,13 +102,8 @@ AddEventHandler('txAdmin:events:adminAuth', function(data)
     local dutySince, totalDuty
     if admins[netId] then
         dutySince, totalDuty = admins[netId].dutySince, admins[netId].totalDuty
-    elseif pendingResync[netId] then
-        local saved = Modules.DutyTracking.restore(netId)
-        if saved then
-            dutySince, totalDuty = saved.dutySince, saved.totalDuty
-        end
     else
-        Modules.DutyTracking.clear(netId) -- fresh connection, ignore any leftover state from a previous session
+        dutySince, totalDuty = DutyTracking.resolve(netId, pendingResync[netId])
     end
 
     pendingResync[netId] = nil
@@ -136,14 +122,12 @@ end)
 
 AddEventHandler('playerDropped', function()
     admins[source] = nil
-    Modules.DutyTracking.clear(source)
+    DutyTracking.clear(source)
 end)
 
 AddEventHandler('onResourceStart', function(startedResource)
     if startedResource ~= resourceName then return end
 
-    -- players still connected when this resource restarts keep their admin/duty
-    -- state by re-running the client auth flow, which re-fires adminAuth below
     for _, playerId in ipairs(GetPlayers()) do
         local netId = tonumber(playerId)
         pendingResync[netId] = true

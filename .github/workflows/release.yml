@@ -23,13 +23,11 @@ jobs:
           mkdir -p release_build/${{ github.event.repository.name }}
 
           cp fxmanifest.lua release_build/${{ github.event.repository.name }}/
-          cp main.lua release_build/${{ github.event.repository.name }}/
           cp settings.lua release_build/${{ github.event.repository.name }}/
-          cp utils.lua release_build/${{ github.event.repository.name }}/
           cp LICENSE release_build/${{ github.event.repository.name }}/
           cp README.md release_build/${{ github.event.repository.name }}/
           cp -r locales release_build/${{ github.event.repository.name }}/
-          cp -r modules release_build/${{ github.event.repository.name }}/
+          cp -r server release_build/${{ github.event.repository.name }}/
 
           sed -i -E "s/^version .*/version '${{ github.ref_name }}'/" release_build/${{ github.event.repository.name }}/fxmanifest.lua
 

@@ -15,6 +15,24 @@ Standalone FiveM resource that bridges txAdmin authentication with a togglable "
 ## Documentation
 Full config and API reference: https://dots-development.gitbook.io/docs/free-scripts/dots-txlogin
 
+## Project structure
+```
+txLogin/
+├── fxmanifest.lua
+├── settings.lua       -- all configuration lives here
+├── locales/            -- one file per language, keyed by Settings.Locale
+│   ├── en.lua
+│   ├── nl.lua
+│   ├── fr.lua
+│   ├── es.lua
+│   └── de.lua
+└── server/
+    ├── utils.lua        -- Notify/Log providers, Locale/FormatDuration helpers
+    ├── duty_tracking.lua -- optional, see Modules below
+    └── main.lua          -- core: admin tracking, toggleDuty, exports, event handlers
+```
+Everything is server-only for now (`server_only 'yes'`); a `client/` folder gets added if/when a feature (e.g. clothing) needs one. This mirrors how other jhag01 resources like skillSystem are laid out — `server/`/`client/` split, config and locales shared at root.
+
 ## State Bags & Exports
 
 | State Bag | Type | Description |
@@ -61,12 +79,12 @@ local seconds = exports['txLogin']:getDutyTime(source)
 ```
 
 ## Modules
-Optional features live in `modules/` and are gated by their own `Settings` flag — disabled means the module does nothing, including not touching disk.
+Optional features are just files in `server/` that check their own `Settings` flag and no-op when it's off — no separate `modules/` folder, matching how other jhag01 resources (e.g. skillSystem's `server/admin.lua`) do it. `duty_tracking.lua` is the only one so far, and it exposes a `DutyTracking` global that `main.lua` calls into directly (it can't use a plain top-of-file `if not Settings.X then return end` bailout like a self-contained file could, since `main.lua` calls its functions inline and expects them to exist either way — so the check happens inside each function instead).
 
-### Duty tracking (`modules/duty_tracking.lua`)
+### Duty tracking (`server/duty_tracking.lua`)
 Enabled via `Settings.DutyTracking` (default `true`). Every admin record carries `dutySince` (timestamp of when their current duty session started, or `nil` if off duty) and `totalDuty` (accumulated seconds on duty since they connected). Session length is included in Discord/ox logs when going off duty.
 
-This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects. It's also the only thing that needs `duty_state.json` (written next to the resource's Lua files, gitignored): that file exists purely to carry `dutySince`/`totalDuty` across a script restart. When `DutyTracking` is disabled, no file is ever created.
+This is per-connection, not a permanent stats database — `totalDuty` resets when the admin fully disconnects. It's also the only thing that needs `duty_state.json` (written at the resource root, gitignored): that file exists purely to carry `dutySince`/`totalDuty` across a script restart. When `DutyTracking` is disabled, no file is ever created.
 
 ## Locales
 Player-facing notifications (currently just the duty on/off message) are pulled from `locales/<code>.lua`. Set `Settings.Locale` to `'en'`, `'nl'`, `'fr'`, `'es'`, or `'de'`. Adding a language is just a new `locales/xx.lua` file following the same shape as the existing ones — no manifest changes needed since `locales/*.lua` is already globbed in.
